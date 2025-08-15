@@ -1,0 +1,35 @@
+### Coordinates ###
+  adapting number of Grid Cells
+  number of grid cells for Latitude: 238
+  number of grid cells for Longitude: 275
+  Longitude Settings:
+  LonMin = 5.00
+  LonMax = 16.00
+  LonStep = 0.04
+  Latitude Settings:
+  LatMin = 42.00
+  LatMax = 51.52
+  LatStep = 0.04
+
+### Date & Time ###
+  Start Date = 2013-01-01
+  End  Date = 2024-12-31
+  Time Settings [sec]:
+  TimeStep = 300
+  TimeSpan = 299
+
+### Lightning DB-Conditions ###
+  AND flash=true
+
+### Filename ###
+  Filename: EUCLID_FL_CGCC
+  
+### Verifing raster distance using Haversine-Formula ###
+  Lat-Center = 46.70
+  Lon-Center = 10.50
+  Checking the horizontal longitude step (0.04) at the center
+  --> Distance between the coordinates (46.7, 10.5) and (46.7, 10.54) is 3.05 kilometer(s).
+  Checking the vertical latitude step (0.04) at the center
+  --> Distance between the coordinates (46.7, 10.5) and (46.74, 10.5) is 4.45 kilometer(s).
+  Manually Verify Distances:
+  https://www.omnicalculator.com/other/latitude-longitude-distance
