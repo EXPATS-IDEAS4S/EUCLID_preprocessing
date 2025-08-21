@@ -7,6 +7,7 @@ import os
 import shutil
 import pandas as pd
 import scipy.ndimage
+import datetime
 
 # Define the edges of the Grid (edges of outer most pixels)
 LONMIN = 5.00
@@ -37,8 +38,8 @@ def create_msg_like_daily_dataset(year, month, day):
 
 
     # create timeseries for 1 day, every 5 minutes and convert to 'datetime64[ns]'
-    times = pd.date_range(start=f"{year}-{month:02d}-{day:02d}", 
-                          end=f"{year}-{month:02d}-{day:02d} 23:59", 
+    times = pd.date_range(start=f"{year}-{month:02d}-{day:02d} 00:00:00", 
+                          end=f"{year}-{month:02d}-{day:02d} 23:59:00", 
                           freq=f"{TIME_RES}T").values.astype("datetime64[ns]")
 
     # create dataset containing only NaNs and add description to this variable
@@ -68,7 +69,8 @@ def create_msg_like_daily_dataset(year, month, day):
         "long_name": "Total Lightning Count regridded to MSG grid.",
         "description": "Each EUCLID lightning count is distributed evenly over the 4 neighboring MSG pixel. "
         "Treat the MSG pixel at the edges of the domain with caution as they only represent 1/2 (border pixel) "
-        "or 1/4 (corner pixel) of the usual pixel size.",
+        "or 1/4 (corner pixel) of the usual pixel size. "
+        "To resample to 15 min MSG resolution run data_euclid.resample(time='15T').sum(dim='time').",
         "units": "",
     })
 
@@ -112,7 +114,7 @@ def process_euclid_data(path, years, months, days, output_path, delete_extracted
     for year in years:
 
         # define year path
-        year_path = f"{path}/TEST_Euclid_{year}.tar"
+        year_path = f"{path}/Euclid_{year}.tar"
         year_path_extracted = year_path.replace(".tar", "")
 
         # unpack year folder if not already exists
@@ -141,12 +143,12 @@ def process_euclid_data(path, years, months, days, output_path, delete_extracted
                 day_path_extracted = day_path.replace(".tar.gz", "")
                 # untar day folder
                 if not os.path.exists(day_path_extracted):
-                    print(f"unpacking {month:02d}-{day:02d}", flush=True)
+                    print(f"___unpacking {month:02d}-{day:02d}", flush=True)
                     # extract all files to the specified directory
                     with tarfile.open(day_path, "r:gz") as tar:
                         tar.extractall(path=day_path_extracted)
                 else:
-                    print(f"already unpacked {month:02d}-{day:02d}", flush=True)
+                    print(f"___already unpacked {month:02d}-{day:02d}", flush=True)
 
                 # create empty dataset
                 ds = create_msg_like_daily_dataset(year, month, day)
@@ -156,8 +158,6 @@ def process_euclid_data(path, years, months, days, output_path, delete_extracted
                 
                 # loop over files
                 for file in extracted_files:
-                    print("__converting", file)
-
                     # create array full of NaNs in expected shape
                     #data_timestamp = np.full((len(ds.lat), len(ds.lon)), np.nan)
 
@@ -189,23 +189,26 @@ def process_euclid_data(path, years, months, days, output_path, delete_extracted
 
                 # delete extracted day folder recursively
                 if delete_extracted:
-                    print(f"_deleting folder {month}-{day}", flush=True)
+                    print(f"___deleting folder {month}-{day}", flush=True)
                     shutil.rmtree(day_path_extracted)
-                break
 
         # delete extracted year folder
         if delete_extracted:
             print(f"deleting", year_path_extracted, flush=True)
             shutil.rmtree(year_path_extracted)
-        break
+
 
 # %%
-euclid_path = "/net/morget/dcorradi/EUCLID/TESTING"
-output_path = "/net/merisi/pbigalke/data/EUCLID/TESTING/"
+euclid_path = "/net/morget/dcorradi/EUCLID"
+output_path = "/net/merisi/pbigalke/data/EUCLID"
 years = [2023]
 months = [7] # np.arange(4, 10, 1)
-days = [24]
+days = np.arange(1, 32, 1) # np.arange(1, 29, 1)
 
+start_time = datetime.datetime.now()
 ds = process_euclid_data(euclid_path, years, months, days, output_path=output_path, delete_extracted=False)
+# print out runtime in hours
+runtime = (datetime.datetime.now() - start_time).total_seconds()
+print(f"Processing took {runtime / 3600} hours or {runtime / 60} minutes.", flush=True)
 
 # %%
