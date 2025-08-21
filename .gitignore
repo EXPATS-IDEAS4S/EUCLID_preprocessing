@@ -2,6 +2,12 @@
 *.nc
 example_MSG_file/
 
+# all plots
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
 # nohup output
 nohup.out
 
