@@ -40,7 +40,7 @@ def create_msg_like_daily_dataset(year, month, day):
     # create timeseries for 1 day, every 5 minutes and convert to 'datetime64[ns]'
     times = pd.date_range(start=f"{year}-{month:02d}-{day:02d} 00:00:00", 
                           end=f"{year}-{month:02d}-{day:02d} 23:59:00", 
-                          freq=f"{TIME_RES}T").values.astype("datetime64[ns]")
+                          freq=f"{TIME_RES}min").values.astype("datetime64[ns]")
 
     # create dataset containing only NaNs and add description to this variable
     ds = xr.Dataset(
@@ -197,16 +197,38 @@ def process_euclid_data(path, years, months, days, output_path, delete_extracted
             print(f"deleting", year_path_extracted, flush=True)
             shutil.rmtree(year_path_extracted)
 
+def loop_over_years_and_tar(output_path, years):
+
+    # loop over years
+    for year in years:
+
+        # year path with processed 
+        year_path = f"{output_path}/{year}"
+        
+        # tar file name
+        year_tar_file = f"{output_path}/{year}.tar"
+
+        if not os.path.exists(year_tar_file):
+            print(f"Creating tar file for {year}", flush=True)
+            print(year_tar_file, flush=True)
+            # compress folder to .tar
+            with tarfile.open(year_tar_file, "w") as tar:
+                tar.add(year_path, arcname=os.path.basename(year_path))
 
 # %%
 euclid_path = "/net/morget/dcorradi/EUCLID"
 output_path = "/net/merisi/pbigalke/data/EUCLID"
-years = [2023]
-months = [7] # np.arange(4, 10, 1)
+years = [2013] # np.arange(2014, 2025, 1) #[2023]
+months = np.arange(4, 10, 1)
 days = np.arange(1, 32, 1) # np.arange(1, 29, 1)
 
 start_time = datetime.datetime.now()
-ds = process_euclid_data(euclid_path, years, months, days, output_path=output_path, delete_extracted=False)
+# process_euclid_data(euclid_path, years, months, days, 
+#                     output_path=output_path, delete_extracted=True)
+
+# create tar files for each year
+loop_over_years_and_tar(output_path, years)
+
 # print out runtime in hours
 runtime = (datetime.datetime.now() - start_time).total_seconds()
 print(f"Processing took {runtime / 3600} hours or {runtime / 60} minutes.", flush=True)
