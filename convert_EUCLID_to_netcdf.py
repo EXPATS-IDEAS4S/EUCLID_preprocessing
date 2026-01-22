@@ -1,3 +1,6 @@
+# This script processes EUCLID lightning data from .dat files contained in .tar.gz archives,
+# regrids the data to match the MSG grid, and saves the processed data in NetCDF format.
+
 # %%
 import numpy as np
 import xarray as xr
@@ -34,8 +37,39 @@ MSG_LONS = np.arange(5.00, 16.01, 0.04).astype(np.float32)
 MSG_LATS = np.arange(42.00, 51.53, 0.04).astype(np.float32)
 
 # %%
-def create_msg_like_daily_dataset(year, month, day):
+# helper methods
+def loop_over_years_and_tar(output_path, years):
+    """
+    Loop over years and create tar files for each year folder in the output path.
+    This is useful to compress the processed netcdf files for each year so that they take less space.
 
+    :param output_path: str, path to the output directory where year folders are located
+    :param years: list of int, years to process
+    """
+    # loop over years
+    for year in years:
+
+        # year path with processed 
+        year_path = f"{output_path}/{year}"
+        
+        # tar file name
+        year_tar_file = f"{output_path}/{year}.tar"
+
+        if not os.path.exists(year_tar_file):
+            print(f"Creating tar file for {year}", flush=True)
+            print(year_tar_file, flush=True)
+            # compress folder to .tar
+            with tarfile.open(year_tar_file, "w") as tar:
+                tar.add(year_path, arcname=os.path.basename(year_path))
+
+def create_msg_like_daily_dataset(year, month, day):
+    """
+    Create an empty xarray Dataset with MSG-like grid and time dimension for one day.
+    :param year: int, year of the dataset
+    :param month: int, month of the dataset
+    :param day: int, day of the dataset
+    :return: xarray Dataset with MSG-like grid and time dimension
+    """
 
     # create timeseries for 1 day, every 5 minutes and convert to 'datetime64[ns]'
     times = pd.date_range(start=f"{year}-{month:02d}-{day:02d} 00:00:00", 
@@ -99,16 +133,17 @@ def create_msg_like_daily_dataset(year, month, day):
     return ds
 
 # %%
+# main processing method
 def process_euclid_data(path, years, months, days, output_path, delete_extracted=True):
     """
     Process EUCLID data from tar files and convert to NetCDF format.
     
-    Parameters:
-    - path: str, path to the EUCLID data directory
-    - years: list of int, years to process
-    - months: list of int, months to process
-    - output_path: str, path to the output directory where to save the processed netcdf files
-    - delete_extracted: bool, whether to delete extracted files after processing
+    :param path: str, path to the EUCLID data directory
+    :param years: list of int, years to process
+    :param months: list of int, months to process
+    :param days: list of int, days to process
+    :param output_path: str, path to the output directory where to save the processed netcdf files
+    :param delete_extracted: bool, whether to delete extracted files after processing
     """
     # loop over years
     for year in years:
@@ -197,40 +232,27 @@ def process_euclid_data(path, years, months, days, output_path, delete_extracted
             print(f"deleting", year_path_extracted, flush=True)
             shutil.rmtree(year_path_extracted)
 
-def loop_over_years_and_tar(output_path, years):
-
-    # loop over years
-    for year in years:
-
-        # year path with processed 
-        year_path = f"{output_path}/{year}"
-        
-        # tar file name
-        year_tar_file = f"{output_path}/{year}.tar"
-
-        if not os.path.exists(year_tar_file):
-            print(f"Creating tar file for {year}", flush=True)
-            print(year_tar_file, flush=True)
-            # compress folder to .tar
-            with tarfile.open(year_tar_file, "w") as tar:
-                tar.add(year_path, arcname=os.path.basename(year_path))
-
 # %%
-euclid_path = "/net/morget/dcorradi/EUCLID"
-output_path = "/net/merisi/pbigalke/data/EUCLID"
-years = [2013] # np.arange(2014, 2025, 1) #[2023]
-months = np.arange(4, 10, 1)
-days = np.arange(1, 32, 1) # np.arange(1, 29, 1)
+if __name__ == "__main__":
+    # define paths and time period to process
+    euclid_path = "/net/morget/dcorradi/EUCLID"
+    output_path = "/net/merisi/pbigalke/data/EUCLID"
 
-start_time = datetime.datetime.now()
-# process_euclid_data(euclid_path, years, months, days, 
-#                     output_path=output_path, delete_extracted=True)
+    # define years, months, days to process
+    years = [2013] # np.arange(2014, 2025, 1) #[2023]
+    months = np.arange(4, 10, 1)
+    days = np.arange(1, 32, 1) # np.arange(1, 29, 1)
 
-# create tar files for each year
-loop_over_years_and_tar(output_path, years)
+    # run the processing script
+    start_time = datetime.datetime.now()
+    process_euclid_data(euclid_path, years, months, days, 
+                        output_path=output_path, delete_extracted=True)
 
-# print out runtime in hours
-runtime = (datetime.datetime.now() - start_time).total_seconds()
-print(f"Processing took {runtime / 3600} hours or {runtime / 60} minutes.", flush=True)
+    # create tar files for each year
+    loop_over_years_and_tar(output_path, years)
+
+    # print out runtime in hours
+    runtime = (datetime.datetime.now() - start_time).total_seconds()
+    print(f"Processing took {runtime / 3600} hours or {runtime / 60} minutes.", flush=True)
 
 # %%
