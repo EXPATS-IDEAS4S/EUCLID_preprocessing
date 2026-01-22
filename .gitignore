@@ -3,10 +3,13 @@
 example_MSG_file/
 
 # all plots
+plots/
 *.png
 *.jpg
 *.jpeg
 *.pdf
+*.gif
+*.mp4
 
 # nohup output
 nohup.out
